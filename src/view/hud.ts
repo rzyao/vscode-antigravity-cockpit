@@ -251,6 +251,9 @@ export class CockpitHUD {
             <button id="reset-order-btn" class="refresh-btn" title="Reset to default order">
                 ${t('dashboard.resetOrder')}
             </button>
+            <button id="toggle-profile-btn" class="refresh-btn" title="${t('profile.togglePlan')}">
+                ${t('profile.planDetails')}
+            </button>
         </div>
     </header>
 

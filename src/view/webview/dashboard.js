@@ -35,12 +35,26 @@
                 startCooldown(60 - diff);
             }
         }
+        
+        // 恢复计划详情显示状态
+        if (state.isProfileHidden !== undefined) {
+            isProfileHidden = state.isProfileHidden;
+        }
+        if (state.isDataMasked !== undefined) {
+            isDataMasked = state.isDataMasked;
+        }
+        updateToggleProfileButton();
 
-        // 绑定事件
         // 绑定事件
         refreshBtn.addEventListener('click', handleRefresh);
         if (resetOrderBtn) {
             resetOrderBtn.addEventListener('click', handleResetOrder);
+        }
+        
+        // 计划详情开关按钮
+        const toggleProfileBtn = document.getElementById('toggle-profile-btn');
+        if (toggleProfileBtn) {
+            toggleProfileBtn.addEventListener('click', handleToggleProfile);
         }
 
         // 事件委托：处理置顶开关
@@ -58,6 +72,28 @@
 
         // 通知扩展已准备就绪
         vscode.postMessage({ command: 'init' });
+    }
+    
+    function handleToggleProfile() {
+        isProfileHidden = !isProfileHidden;
+        // 保存状态
+        const state = vscode.getState() || {};
+        vscode.setState({ ...state, isProfileHidden });
+        updateToggleProfileButton();
+        vscode.postMessage({ command: 'rerender' });
+    }
+    
+    function updateToggleProfileButton() {
+        const btn = document.getElementById('toggle-profile-btn');
+        if (btn) {
+            if (isProfileHidden) {
+                btn.textContent = (i18n['profile.planDetails'] || 'Plan') + ' ▼';
+                btn.classList.add('toggle-off');
+            } else {
+                btn.textContent = (i18n['profile.planDetails'] || 'Plan') + ' ▲';
+                btn.classList.remove('toggle-off');
+            }
+        }
     }
 
     // ============ 事件处理 ============
@@ -280,31 +316,8 @@
     let isDataMasked = false;     // 控制数据是否显示为 ***
 
     function renderUserProfile(userInfo) {
-        // 如果用户选择隐藏计划详情，只渲染一个小的折叠提示
+        // 如果用户选择隐藏计划详情，直接返回不渲染
         if (isProfileHidden) {
-            const card = document.createElement('div');
-            card.className = 'card full-width profile-card profile-collapsed';
-            card.innerHTML = `
-                <div class="card-title collapsed-title">
-                    <span class="label">${i18n['profile.details'] || 'Plan Details'}</span>
-                    <div class="profile-controls">
-                        <button class="icon-btn" id="profile-show-btn" title="${i18n['profile.show'] || 'Show Plan Details'}">
-                            <span class="icon-eye-closed">👁‍🗨</span>
-                        </button>
-                    </div>
-                </div>
-            `;
-            dashboard.appendChild(card);
-            
-            // 绑定显示按钮事件
-            const showBtn = card.querySelector('#profile-show-btn');
-            if (showBtn) {
-                showBtn.addEventListener('click', () => {
-                    isProfileHidden = false;
-                    // 重新渲染需要通过消息触发
-                    vscode.postMessage({ command: 'rerender' });
-                });
-            }
             return;
         }
 
@@ -337,21 +350,15 @@
         const toggleText = isProfileExpanded ? (i18n['profile.less'] || 'Show Less') : (i18n['profile.more'] || 'Show More Details');
         const iconTransform = isProfileExpanded ? 'rotate(180deg)' : 'rotate(0deg)';
         
-        // Eye icon state
-        const eyeIcon = isDataMasked ? '👁‍🗨' : '👁';
-        const eyeTitle = isDataMasked ? (i18n['profile.showData'] || 'Show Data') : (i18n['profile.hideData'] || 'Hide Data');
+        // Mask button text
+        const maskBtnText = isDataMasked ? (i18n['profile.showData'] || 'Show') : (i18n['profile.hideData'] || 'Hide');
 
 
         card.innerHTML = `
             <div class="card-title">
                 <span class="label">${i18n['profile.details'] || 'Plan Details'}</span>
                 <div class="profile-controls">
-                    <button class="icon-btn" id="profile-mask-btn" title="${eyeTitle}">
-                        <span class="icon-eye">${eyeIcon}</span>
-                    </button>
-                    <button class="icon-btn" id="profile-hide-btn" title="${i18n['profile.hide'] || 'Hide Plan Details'}">
-                        <span class="icon-hide">✕</span>
-                    </button>
+                    <button class="text-btn" id="profile-mask-btn">${maskBtnText}</button>
                     <div class="tier-badge">${userInfo.tier}</div>
                 </div>
             </div>
@@ -410,14 +417,9 @@
         if (maskBtn) {
             maskBtn.addEventListener('click', () => {
                 isDataMasked = !isDataMasked;
-                vscode.postMessage({ command: 'rerender' });
-            });
-        }
-        
-        const hideBtn = card.querySelector('#profile-hide-btn');
-        if (hideBtn) {
-            hideBtn.addEventListener('click', () => {
-                isProfileHidden = true;
+                // 保存状态
+                const state = vscode.getState() || {};
+                vscode.setState({ ...state, isDataMasked });
                 vscode.postMessage({ command: 'rerender' });
             });
         }
