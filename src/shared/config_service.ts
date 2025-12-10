@@ -64,9 +64,9 @@ class ConfigService {
             logLevel: config.get<string>(CONFIG_KEYS.LOG_LEVEL, LOG_LEVELS.INFO),
             notificationEnabled: config.get<boolean>(CONFIG_KEYS.NOTIFICATION_ENABLED, true),
             statusBarFormat: config.get<string>(CONFIG_KEYS.STATUS_BAR_FORMAT, STATUS_BAR_FORMAT.STANDARD),
-            groupingEnabled: config.get<boolean>(CONFIG_KEYS.GROUPING_ENABLED, false),
+            groupingEnabled: config.get<boolean>(CONFIG_KEYS.GROUPING_ENABLED, true),
             groupingCustomNames: config.get<Record<string, string>>(CONFIG_KEYS.GROUPING_CUSTOM_NAMES, {}),
-            groupingShowInStatusBar: config.get<boolean>(CONFIG_KEYS.GROUPING_SHOW_IN_STATUS_BAR, false),
+            groupingShowInStatusBar: config.get<boolean>(CONFIG_KEYS.GROUPING_SHOW_IN_STATUS_BAR, true),
             pinnedGroups: config.get<string[]>(CONFIG_KEYS.PINNED_GROUPS, []),
             groupOrder: config.get<string[]>(CONFIG_KEYS.GROUP_ORDER, []),
         };

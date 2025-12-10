@@ -112,13 +112,48 @@ export interface ClientModelConfig {
     allowedTiers?: string[];
 }
 
+/** 团队配置 */
+export interface DefaultTeamConfig {
+    allowMcpServers?: boolean;
+    allowAutoRunCommands?: boolean;
+    allowBrowserExperimentalFeatures?: boolean;
+    [key: string]: boolean | string | number | undefined;
+}
+
 /** 计划信息 */
 export interface PlanInfo {
     teamsTier: string;
     planName: string;
     monthlyPromptCredits: number;
     monthlyFlowCredits: number;
-    [key: string]: any;
+    
+    // 功能开关
+    browserEnabled?: boolean;
+    knowledgeBaseEnabled?: boolean;
+    canBuyMoreCredits?: boolean;
+    hasAutocompleteFastMode?: boolean;
+    cascadeWebSearchEnabled?: boolean;
+    canGenerateCommitMessages?: boolean;
+    hasTabToJump?: boolean;
+    allowStickyPremiumModels?: boolean;
+    allowPremiumCommandModels?: boolean;
+    canCustomizeAppIcon?: boolean;
+    cascadeCanAutoRunCommands?: boolean;
+    canAllowCascadeInBackground?: boolean;
+    
+    // 限制配置
+    maxNumChatInputTokens?: string | number;
+    maxNumPremiumChatMessages?: string | number;
+    maxCustomChatInstructionCharacters?: string | number;
+    maxNumPinnedContextItems?: string | number;
+    maxLocalIndexSize?: string | number;
+    monthlyFlexCreditPurchaseAmount?: number;
+    
+    // 团队配置
+    defaultTeamConfig?: DefaultTeamConfig;
+    
+    /** 扩展字段 - 支持 API 返回的其他属性 */
+    [key: string]: string | number | boolean | object | undefined;
 }
 
 /** 计划状态 */
