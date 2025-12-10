@@ -3,7 +3,7 @@
   "displayName": "Antigravity Cockpit",
   "icon": "assets/icon.png",
   "description": "A premium, dashboard-style quota monitor for Antigravity AI.",
-  "version": "1.1.147",
+  "version": "1.1.148",
   "publisher": "jlcodes",
   "engines": {
     "vscode": "^1.90.0"
@@ -60,11 +60,6 @@
           "minimum": 10,
           "maximum": 3600,
           "description": "Interval in seconds to refresh quota data (10-3600)."
-        },
-        "agCockpit.showPromptCredits": {
-          "type": "boolean",
-          "default": false,
-          "description": "Show prompt credits in the dashboard and include them in status bar status."
         },
         "agCockpit.pinnedModels": {
           "type": "array",

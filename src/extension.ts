@@ -260,15 +260,6 @@ function updateStatusBar(snapshot: QuotaSnapshot, config: CockpitConfig): void {
         }
     }
 
-    // 添加 Prompt Credits
-    if (config.showPromptCredits && snapshot.promptCredits) {
-        const pct = snapshot.promptCredits.remainingPercentage;
-        statusTextParts.push(`${t('statusBar.credits')}: ${pct.toFixed(0)}%`);
-        if (pct < minPercentage) {
-            minPercentage = pct;
-        }
-    }
-
     // 更新状态栏
     if (statusTextParts.length > 0) {
         statusBarItem.text = `$(rocket) ${statusTextParts.join('  |  ')}`;
@@ -313,6 +304,10 @@ function handleConfigChange(config: CockpitConfig): void {
         logger.info(`Refresh interval changed from ${reactor.currentInterval}ms to ${newInterval}ms. Restarting Reactor.`);
         reactor.startReactor(newInterval);
     }
+    
+    // 对于任何配置变更，立即重新处理最近的数据以更新 UI（如状态栏格式变化）
+    // 这确保存储在 lastSnapshot 中的数据使用新配置重新呈现
+    reactor.reprocess();
 }
 
 /**
