@@ -324,21 +324,21 @@
                     ${createDetailItem(i18n['feature.fastMode'] || 'Fast Mode', getFeatureStatus(userInfo.hasAutocompleteFastMode))}
                     ${createDetailItem(i18n['feature.moreCredits'] || 'Can Buy Credits', getFeatureStatus(userInfo.canBuyMoreCredits))}
                     
-                    ${createDetailItem('Teams Tier', userInfo.teamsTier)}
-                    ${createDetailItem('User ID', userInfo.userTierId || 'N/A')}
-                    ${createDetailItem('Tab To Jump', getFeatureStatus(userInfo.hasTabToJump))}
-                    ${createDetailItem('Sticky Models', getFeatureStatus(userInfo.allowStickyPremiumModels))}
-                    ${createDetailItem('Command Models', getFeatureStatus(userInfo.allowPremiumCommandModels))}
-                    ${createDetailItem('Max Premium msgs', userInfo.maxNumPremiumChatMessages)}
-                    ${createDetailItem('Chat Instructions Char Limit', userInfo.maxCustomChatInstructionCharacters)}
-                    ${createDetailItem('Pinned Context Items', userInfo.maxNumPinnedContextItems)}
-                    ${createDetailItem('Local Index Size', userInfo.maxLocalIndexSize)}
-                    ${createDetailItem('Accepted TOS', getFeatureStatus(userInfo.acceptedLatestTermsOfService))}
-                    ${createDetailItem('Customize Icon', getFeatureStatus(userInfo.canCustomizeAppIcon))}
-                    ${createDetailItem('Cascade Auto Run', getFeatureStatus(userInfo.cascadeCanAutoRunCommands))}
-                    ${createDetailItem('Cascade Background', getFeatureStatus(userInfo.canAllowCascadeInBackground))}
-                    ${createDetailItem('Auto Run Commands', getFeatureStatus(userInfo.allowAutoRunCommands))}
-                    ${createDetailItem('Exp. Browser Features', getFeatureStatus(userInfo.allowBrowserExperimentalFeatures))}
+                    ${createDetailItem(i18n['profile.teamsTier'] || 'Teams Tier', userInfo.teamsTier)}
+                    ${createDetailItem(i18n['profile.userId'] || 'User ID', userInfo.userTierId || 'N/A')}
+                    ${createDetailItem(i18n['profile.tabToJump'] || 'Tab To Jump', getFeatureStatus(userInfo.hasTabToJump))}
+                    ${createDetailItem(i18n['profile.stickyModels'] || 'Sticky Models', getFeatureStatus(userInfo.allowStickyPremiumModels))}
+                    ${createDetailItem(i18n['profile.commandModels'] || 'Command Models', getFeatureStatus(userInfo.allowPremiumCommandModels))}
+                    ${createDetailItem(i18n['profile.maxPremiumMsgs'] || 'Max Premium Msgs', userInfo.maxNumPremiumChatMessages)}
+                    ${createDetailItem(i18n['profile.chatInstructionsCharLimit'] || 'Chat Instructions Char Limit', userInfo.maxCustomChatInstructionCharacters)}
+                    ${createDetailItem(i18n['profile.pinnedContextItems'] || 'Pinned Context Items', userInfo.maxNumPinnedContextItems)}
+                    ${createDetailItem(i18n['profile.localIndexSize'] || 'Local Index Size', userInfo.maxLocalIndexSize)}
+                    ${createDetailItem(i18n['profile.acceptedTos'] || 'Accepted TOS', getFeatureStatus(userInfo.acceptedLatestTermsOfService))}
+                    ${createDetailItem(i18n['profile.customizeIcon'] || 'Customize Icon', getFeatureStatus(userInfo.canCustomizeAppIcon))}
+                    ${createDetailItem(i18n['profile.cascadeAutoRun'] || 'Cascade Auto Run', getFeatureStatus(userInfo.cascadeCanAutoRunCommands))}
+                    ${createDetailItem(i18n['profile.cascadeBackground'] || 'Cascade Background', getFeatureStatus(userInfo.canAllowCascadeInBackground))}
+                    ${createDetailItem(i18n['profile.autoRunCommands'] || 'Auto Run Commands', getFeatureStatus(userInfo.allowAutoRunCommands))}
+                    ${createDetailItem(i18n['profile.expBrowserFeatures'] || 'Exp. Browser Features', getFeatureStatus(userInfo.allowBrowserExperimentalFeatures))}
                 </div>
                 ${upgradeHtml}
             </div>
