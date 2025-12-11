@@ -461,24 +461,15 @@ function updateStatusBar(snapshot: QuotaSnapshot, config: CockpitConfig): void {
         }
     }
 
-    // 更新状态栏
+    // 更新状态栏（每个模型/分组前面显示颜色球，不再使用背景色）
     if (statusTextParts.length > 0) {
-        statusBarItem.text = `$(rocket) ${statusTextParts.join('  |  ')}`;
+        statusBarItem.text = statusTextParts.join(' | ');
     } else {
-        statusBarItem.text = `$(rocket) ${t('statusBar.ready')}`;
+        statusBarItem.text = `🟢 ${t('statusBar.ready')}`;
     }
 
-    // 设置背景颜色（三档区分）
-    if (minPercentage <= QUOTA_THRESHOLDS.CRITICAL) {
-        // 危险：红色背景
-        statusBarItem.backgroundColor = new vscode.ThemeColor('statusBarItem.errorBackground');
-    } else if (minPercentage <= QUOTA_THRESHOLDS.WARNING) {
-        // 警告：黄色背景
-        statusBarItem.backgroundColor = new vscode.ThemeColor('statusBarItem.warningBackground');
-    } else {
-        // 正常：无背景
-        statusBarItem.backgroundColor = undefined;
-    }
+    // 移除背景色，改用每个项目前的颜色球区分
+    statusBarItem.backgroundColor = undefined;
 
     // 更新悬浮提示 - 卡片式布局显示配额详情
     statusBarItem.tooltip = generateQuotaTooltip(snapshot, config);
@@ -522,8 +513,9 @@ function generateQuotaTooltip(snapshot: QuotaSnapshot, config: CockpitConfig): v
         const shortName = getShortModelName(model.label);
         const resetTime = model.timeUntilResetFormatted || '-';
         
-        // 格式：| 🟡 **Name** | `进度条` | 32% → time |
-        md.appendMarkdown(`| ${icon} **${shortName}** | \`${bar}\` | ${pct}% → ${resetTime} |\n`);
+        // 格式：| 🟡 **Name** | `进度条` | 32.59% → time |
+        const pctDisplay = (Math.floor(pct * 100) / 100).toFixed(2);
+        md.appendMarkdown(`| ${icon} **${shortName}** | \`${bar}\` | ${pctDisplay}% → ${resetTime} |\n`);
     }
 
     // 底部提示
@@ -568,31 +560,30 @@ function getShortModelName(label: string): string {
 }
 
 /**
- * 获取状态图标（与仪表盘保持一致）
- * 🟢 > 50% (HEALTHY)
- * 🟡 30% - 50% (WARNING)
- * 🔴 10% - 30% (CRITICAL 边缘)
- * ⚫ <= 10% (耗尽)
+ * 获取状态图标（三色统一规则）
+ * 🟢 > 50% (健康)
+ * 🟡 30% - 50% (警告)
+ * 🔴 <= 30% (危险)
  */
 function getStatusIcon(percentage: number): string {
-    if (percentage <= QUOTA_THRESHOLDS.CRITICAL) return '⚫'; // <= 10%
     if (percentage <= QUOTA_THRESHOLDS.WARNING) return '🔴';  // <= 30%
     if (percentage <= QUOTA_THRESHOLDS.HEALTHY) return '🟡';  // <= 50%
     return '🟢'; // > 50%
 }
 
 /**
- * 格式化状态栏文本
+ * 格式化状态栏文本（带颜色球前缀）
  */
 function formatStatusBarText(label: string, percentage: number, format: string): string {
+    const icon = getStatusIcon(percentage);
     switch (format) {
         case STATUS_BAR_FORMAT.COMPACT:
-            return `${Math.floor(percentage)}%`;
+            return `${icon} ${Math.floor(percentage)}%`;
         case STATUS_BAR_FORMAT.DETAILED:
-            return `${label}: ${percentage.toFixed(1)}%`;
+            return `${icon} ${label}: ${percentage.toFixed(1)}%`;
         case STATUS_BAR_FORMAT.STANDARD:
         default:
-            return `${label}: ${Math.floor(percentage)}%`;
+            return `${icon} ${label}: ${Math.floor(percentage)}%`;
     }
 }
 

@@ -209,11 +209,10 @@
     // ============ 工具函数 ============
 
     function getHealthColor(percentage) {
-        // 与 QUOTA_THRESHOLDS 保持一致 (HEALTHY=50, WARNING=30, CRITICAL=10)
+        // 三色统一规则 (HEALTHY=50, WARNING=30)
         if (percentage > 50) return 'var(--success)';  // 绿色 > 50%
         if (percentage > 30) return 'var(--warning)';  // 黄色 30-50%
-        if (percentage > 10) return 'var(--danger)';   // 红色 10-30%
-        return 'var(--text-secondary)';                // 灰色 ≤ 10% (耗尽)
+        return 'var(--danger)';                        // 红色 <= 30%
     }
 
     function togglePin(modelId) {
