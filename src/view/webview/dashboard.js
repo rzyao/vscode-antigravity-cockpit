@@ -215,6 +215,13 @@
         return 'var(--danger)';                        // 红色 <= 30%
     }
 
+    function getStatusText(percentage) {
+        // 三色统一规则 (HEALTHY=50, WARNING=30)
+        if (percentage > 50) return i18n['dashboard.active'] || 'Healthy';   // 健康
+        if (percentage > 30) return i18n['dashboard.warning'] || 'Warning';  // 警告
+        return i18n['dashboard.danger'] || 'Danger';                         // 危险
+    }
+
     function togglePin(modelId) {
         vscode.postMessage({ command: 'togglePin', modelId: modelId });
     }
@@ -597,9 +604,7 @@
             <div class="info-row">
                 <span>${i18n['dashboard.status'] || 'Status'}</span>
                 <span class="info-value" style="color: ${color}">
-                    ${group.isExhausted 
-                        ? (i18n['dashboard.exhausted'] || 'Exhausted') 
-                        : (i18n['dashboard.active'] || 'Active')}
+                    ${getStatusText(pct)}
                 </span>
             </div>
             <div class="group-models">
@@ -681,9 +686,7 @@
             <div class="info-row">
                 <span>${i18n['dashboard.status'] || 'Status'}</span>
                 <span class="info-value" style="color: ${color}">
-                    ${model.isExhausted 
-                        ? (i18n['dashboard.exhausted'] || 'Exhausted') 
-                        : (i18n['dashboard.active'] || 'Active')}
+                    ${getStatusText(pct)}
                 </span>
             </div>
         `;

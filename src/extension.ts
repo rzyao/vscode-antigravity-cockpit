@@ -510,12 +510,12 @@ function generateQuotaTooltip(snapshot: QuotaSnapshot, config: CockpitConfig): v
         const pct = model.remainingPercentage ?? 0;
         const icon = getStatusIcon(pct);
         const bar = generateCompactProgressBar(pct);
-        const shortName = getShortModelName(model.label);
         const resetTime = model.timeUntilResetFormatted || '-';
-        
+
+        // 使用完整模型名称
         // 格式：| 🟡 **Name** | `进度条` | 32.59% → time |
         const pctDisplay = (Math.floor(pct * 100) / 100).toFixed(2);
-        md.appendMarkdown(`| ${icon} **${shortName}** | \`${bar}\` | ${pctDisplay}% → ${resetTime} |\n`);
+        md.appendMarkdown(`| ${icon} **${model.label}** | \`${bar}\` | ${pctDisplay}% → ${resetTime} |\n`);
     }
 
     // 底部提示
