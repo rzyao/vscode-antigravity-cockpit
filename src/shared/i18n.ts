@@ -112,6 +112,8 @@ const translations: Record<SupportedLocale, TranslationMap> = {
         'grouping.models': 'Models',
         'grouping.showInStatusBar': 'Show Groups in Status Bar',
         'grouping.toggleHint': 'Toggle group view',
+        'grouping.autoGroup': 'Auto Group',
+        'grouping.autoGroupHint': 'Recalculate groups based on current quota',
     },
     'zh-cn': {
         // 状态栏
@@ -210,6 +212,8 @@ const translations: Record<SupportedLocale, TranslationMap> = {
         'grouping.models': '包含模型',
         'grouping.showInStatusBar': '在状态栏显示分组',
         'grouping.toggleHint': '切换分组视图',
+        'grouping.autoGroup': '自动分组',
+        'grouping.autoGroupHint': '根据当前配额重新计算分组',
     },
 };
 

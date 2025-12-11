@@ -63,6 +63,7 @@ export const CONFIG_KEYS = {
     GROUPING_SHOW_IN_STATUS_BAR: 'groupingShowInStatusBar',
     PINNED_GROUPS: 'pinnedGroups',
     GROUP_ORDER: 'groupOrder',
+    GROUP_MAPPINGS: 'groupMappings',
 } as const;
 
 /** 状态栏显示格式 */

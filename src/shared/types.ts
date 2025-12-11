@@ -280,7 +280,8 @@ export type WebviewMessageType =
     | 'toggleGrouping'
     | 'promptRenameGroup'
     | 'toggleGroupPin'
-    | 'updateGroupOrder';
+    | 'updateGroupOrder'
+    | 'autoGroup';
 
 /** Webview 消息 */
 export interface WebviewMessage {

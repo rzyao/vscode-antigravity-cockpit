@@ -37,6 +37,8 @@ export class ReactorCore {
     private warningNotifiedModels: Set<string> = new Set();
     /** 上一次的配额快照缓存 */
     private lastSnapshot?: QuotaSnapshot;
+    /** 上一次的原始 API 响应缓存（用于 reprocess 时重新生成分组） */
+    private lastRawResponse?: ServerUserStatusResponse;
 
     constructor() {
         logger.debug('ReactorCore Online');
@@ -49,6 +51,13 @@ export class ReactorCore {
         this.port = port;
         this.token = token;
         logger.info(`Reactor Engaged: :${port}`);
+    }
+
+    /**
+     * 获取最新的配额快照
+     */
+    getLatestSnapshot(): QuotaSnapshot | undefined {
+        return this.lastSnapshot;
     }
 
     /**
@@ -159,6 +168,7 @@ export class ReactorCore {
                 },
             );
 
+            this.lastRawResponse = raw; // 缓存原始响应
             const telemetry = this.decodeSignal(raw);
             this.lastSnapshot = telemetry; // Cache the latest snapshot
 
@@ -191,11 +201,18 @@ export class ReactorCore {
      * 用于在配置变更等不需要重新请求 API 的场景下更新 UI
      */
     reprocess(): void {
-        if (this.lastSnapshot && this.updateHandler) {
-            logger.info('Reprocessing cached telemetry data');
+        if (this.lastRawResponse && this.updateHandler) {
+            logger.info('Reprocessing cached telemetry data with latest config');
+            // 重新调用 decodeSignal 以根据最新配置生成分组
+            const telemetry = this.decodeSignal(this.lastRawResponse);
+            this.lastSnapshot = telemetry;
+            this.updateHandler(telemetry);
+        } else if (this.lastSnapshot && this.updateHandler) {
+            // 如果没有原始响应，回退到旧的行为
+            logger.info('Reprocessing cached snapshot (no raw response)');
             this.updateHandler(this.lastSnapshot);
         } else {
-            logger.warn('Cannot reprocess: no cached snapshot available');
+            logger.warn('Cannot reprocess: no cached data available');
         }
     }
 
@@ -374,33 +391,41 @@ export class ReactorCore {
             return a.label.localeCompare(b.label);
         });
 
-        // 分组逻辑：根据 remainingFraction + resetTime 生成指纹进行分组
+        // 分组逻辑：使用存储的 groupMappings 进行分组
         const config = configService.getConfig();
         let groups: QuotaGroup[] | undefined;
         
         if (config.groupingEnabled) {
             const groupMap = new Map<string, ModelQuotaInfo[]>();
+            const savedMappings = config.groupMappings;
+            const hasSavedMappings = Object.keys(savedMappings).length > 0;
             
-            // 根据配额指纹进行分组
-            for (const model of models) {
-                const fingerprint = `${model.remainingFraction?.toFixed(6)}_${model.resetTime.getTime()}`;
-                if (!groupMap.has(fingerprint)) {
-                    groupMap.set(fingerprint, []);
+            if (hasSavedMappings) {
+                // 使用存储的分组映射
+                for (const model of models) {
+                    const groupId = savedMappings[model.modelId];
+                    if (groupId) {
+                        if (!groupMap.has(groupId)) {
+                            groupMap.set(groupId, []);
+                        }
+                        groupMap.get(groupId)!.push(model);
+                    } else {
+                        // 新模型，单独一组（使用自己的 modelId 作为 groupId）
+                        groupMap.set(model.modelId, [model]);
+                    }
                 }
-                groupMap.get(fingerprint)!.push(model);
+            } else {
+                // 没有存储的映射，每个模型单独一组
+                for (const model of models) {
+                    groupMap.set(model.modelId, [model]);
+                }
             }
             
             // 转换为 QuotaGroup 数组
             groups = [];
             let groupIndex = 1;
             
-            for (const [fingerprint, groupModels] of groupMap) {
-                // 生成稳定的 groupId：基于组内模型 ID 排序后的哈希
-                const stableGroupId = groupModels
-                    .map(m => m.modelId)
-                    .sort()
-                    .join('_');
-                
+            for (const [groupId, groupModels] of groupMap) {
                 // 锚点共识：查找组内模型的自定义名称
                 let groupName = '';
                 const customNames = config.groupingCustomNames;
@@ -435,15 +460,18 @@ export class ReactorCore {
                 }
                 
                 const firstModel = groupModels[0];
+                // 计算组内所有模型的平均/最低配额
+                const minPercentage = Math.min(...groupModels.map(m => m.remainingPercentage ?? 0));
+                
                 groups.push({
-                    groupId: stableGroupId,
+                    groupId,
                     groupName,
                     models: groupModels,
-                    remainingPercentage: firstModel.remainingPercentage ?? 0,
+                    remainingPercentage: minPercentage,
                     resetTime: firstModel.resetTime,
                     resetTimeDisplay: firstModel.resetTimeDisplay,
                     timeUntilResetFormatted: firstModel.timeUntilResetFormatted,
-                    isExhausted: firstModel.isExhausted,
+                    isExhausted: groupModels.some(m => m.isExhausted),
                 });
                 
                 groupIndex++;
@@ -461,7 +489,7 @@ export class ReactorCore {
                 return minIndexA - minIndexB;
             });
             
-            logger.debug(`Grouping enabled: ${groups.length} groups created`);
+            logger.debug(`Grouping enabled: ${groups.length} groups created (saved mappings: ${hasSavedMappings})`);
         }
 
         return {
@@ -507,6 +535,34 @@ export class ReactorCore {
             isConnected: false,
             errorMessage,
         };
+    }
+
+    /**
+     * 根据当前配额信息计算分组映射
+     * 返回 modelId -> groupId 的映射
+     */
+    static calculateGroupMappings(models: ModelQuotaInfo[]): Record<string, string> {
+        const mappings: Record<string, string> = {};
+        const groupMap = new Map<string, string[]>();
+        
+        // 根据配额指纹进行分组
+        for (const model of models) {
+            const fingerprint = `${model.remainingFraction?.toFixed(6)}_${model.resetTime.getTime()}`;
+            if (!groupMap.has(fingerprint)) {
+                groupMap.set(fingerprint, []);
+            }
+            groupMap.get(fingerprint)!.push(model.modelId);
+        }
+        
+        // 为每个组生成稳定的 groupId
+        for (const [, modelIds] of groupMap) {
+            const stableGroupId = modelIds.sort().join('_');
+            for (const modelId of modelIds) {
+                mappings[modelId] = stableGroupId;
+            }
+        }
+        
+        return mappings;
     }
 }
 

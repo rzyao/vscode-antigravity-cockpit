@@ -194,16 +194,16 @@ function setupMessageHandling(): void {
                         await configService.updateConfig('groupingShowInStatusBar', true);
                     }
                 }
-                // 需要重新从 API 获取数据以生成分组
-                reactor.syncTelemetry();
+                // 使用缓存数据重新渲染
+                reactor.reprocess();
                 break;
 
             case 'renameGroup':
                 if (message.modelIds && message.groupName) {
                     logger.info(`User renamed group to: ${message.groupName}`);
                     await configService.updateGroupName(message.modelIds, message.groupName);
-                    // 需要重新处理数据以更新分组名称
-                    reactor.syncTelemetry();
+                    // 使用缓存数据重新渲染
+                    reactor.reprocess();
                 } else {
                     logger.warn('renameGroup signal missing required data');
                 }
@@ -219,7 +219,7 @@ function setupMessageHandling(): void {
                     if (newName && newName.trim() && newName !== message.currentName) {
                         logger.info(`User renamed group to: ${newName}`);
                         await configService.updateGroupName(message.modelIds, newName.trim());
-                        reactor.syncTelemetry();
+                        reactor.reprocess();
                     }
                 } else {
                     logger.warn('promptRenameGroup signal missing required data');
@@ -243,6 +243,26 @@ function setupMessageHandling(): void {
                     reactor.reprocess();
                 } else {
                     logger.warn('updateGroupOrder signal missing order data');
+                }
+                break;
+
+            case 'autoGroup':
+                logger.info('User triggered auto-grouping');
+                // 获取最新的快照数据
+                const latestSnapshot = reactor.getLatestSnapshot();
+                if (latestSnapshot && latestSnapshot.models.length > 0) {
+                    // 计算新的分组映射
+                    const newMappings = ReactorCore.calculateGroupMappings(latestSnapshot.models);
+                    await configService.updateGroupMappings(newMappings);
+                    logger.info(`Auto-grouped ${Object.keys(newMappings).length} models`);
+                    
+                    // 清除之前的 pinnedGroups（因为 groupId 已变化）
+                    await configService.updateConfig('pinnedGroups', []);
+                    
+                    // 重新处理数据以刷新 UI
+                    reactor.reprocess();
+                } else {
+                    logger.warn('No snapshot data available for auto-grouping');
                 }
                 break;
         }

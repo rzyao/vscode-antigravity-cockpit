@@ -33,6 +33,8 @@ export interface CockpitConfig {
     pinnedGroups: string[];
     /** 分组排序顺序 */
     groupOrder: string[];
+    /** 分组映射 (modelId -> groupId) */
+    groupMappings: Record<string, string>;
 }
 
 /** 配置服务类 */
@@ -69,6 +71,7 @@ class ConfigService {
             groupingShowInStatusBar: config.get<boolean>(CONFIG_KEYS.GROUPING_SHOW_IN_STATUS_BAR, true),
             pinnedGroups: config.get<string[]>(CONFIG_KEYS.PINNED_GROUPS, []),
             groupOrder: config.get<string[]>(CONFIG_KEYS.GROUP_ORDER, []),
+            groupMappings: config.get<Record<string, string>>(CONFIG_KEYS.GROUP_MAPPINGS, {}),
         };
     }
 
@@ -215,6 +218,20 @@ class ConfigService {
      */
     async resetGroupOrder(): Promise<void> {
         await this.updateConfig('groupOrder', []);
+    }
+
+    /**
+     * 更新分组映射 (modelId -> groupId)
+     */
+    async updateGroupMappings(mappings: Record<string, string>): Promise<void> {
+        await this.updateConfig('groupMappings', mappings);
+    }
+
+    /**
+     * 清除分组映射（触发重新自动分组）
+     */
+    async clearGroupMappings(): Promise<void> {
+        await this.updateConfig('groupMappings', {});
     }
 
     /**

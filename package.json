@@ -3,7 +3,7 @@
   "displayName": "Antigravity Cockpit",
   "icon": "assets/icon.png",
   "description": "A premium, dashboard-style quota monitor for Antigravity AI.",
-  "version": "1.2.14",
+  "version": "1.2.15",
   "publisher": "jlcodes",
   "engines": {
     "vscode": "^1.90.0"
@@ -135,6 +135,11 @@
           },
           "default": [],
           "description": "User-defined order of groups in the dashboard."
+        },
+        "agCockpit.groupMappings": {
+          "type": "object",
+          "default": {},
+          "description": "Model to group mappings. Used to persist group assignments. Click 'Auto Group' to recalculate based on current quota."
         }
       }
     },

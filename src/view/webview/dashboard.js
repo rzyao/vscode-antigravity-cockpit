@@ -146,6 +146,11 @@
         showToast(i18n['dashboard.resetOrder'] || 'Reset Order', 'success');
     }
 
+    function handleAutoGroup() {
+        vscode.postMessage({ command: 'autoGroup' });
+        showToast(i18n['grouping.autoGroup'] || 'Auto grouping...', 'info');
+    }
+
     function handleMessage(event) {
         const message = event.data;
         
@@ -323,6 +328,9 @@
         
         // 如果启用了分组显示，渲染分组卡片
         if (config?.groupingEnabled && snapshot.groups && snapshot.groups.length > 0) {
+            // 渲染自动分组按钮区域
+            renderAutoGroupBar();
+            
             // 分组排序：支持自定义顺序
             let groups = [...snapshot.groups];
             if (config?.groupOrder?.length > 0) {
@@ -380,6 +388,24 @@
             </div>
         `;
         dashboard.appendChild(card);
+    }
+
+    function renderAutoGroupBar() {
+        const bar = document.createElement('div');
+        bar.className = 'auto-group-toolbar';
+        bar.innerHTML = `
+            <button id="auto-group-btn" class="auto-group-link" title="${i18n['grouping.autoGroupHint'] || 'Recalculate groups based on current quota'}">
+                <span class="icon">🔄</span>
+                ${i18n['grouping.autoGroup'] || 'Auto Group'}
+            </button>
+        `;
+        dashboard.appendChild(bar);
+        
+        // 绑定点击事件
+        const btn = bar.querySelector('#auto-group-btn');
+        if (btn) {
+            btn.addEventListener('click', handleAutoGroup);
+        }
     }
 
     // State for profile toggle

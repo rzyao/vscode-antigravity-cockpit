@@ -793,3 +793,88 @@ input:checked + .slider:before {
     color: var(--text-secondary);
     border: 1px solid rgba(139, 148, 158, 0.3);
 }
+
+/* Merge Target Highlight */
+.card.merge-target {
+    border: 2px dashed var(--success);
+    background-color: rgba(35, 134, 54, 0.1);
+    transform: scale(1.02);
+    box-shadow: 0 0 15px rgba(35, 134, 54, 0.2);
+}
+
+.card.merge-target::after {
+    content: '🔗 Merge';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: var(--success);
+    color: white;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: bold;
+    pointer-events: none;
+    z-index: 10;
+}
+
+/* Ungroup Button */
+.ungroup-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    transition: all 0.2s;
+    opacity: 0.6;
+    color: var(--text-secondary);
+    margin-right: 4px;
+}
+
+.ungroup-btn:hover {
+    opacity: 1;
+    background: rgba(218, 54, 51, 0.2);
+    color: var(--danger);
+}
+
+/* ============ 自动分组按钮栏 ============ */
+
+.auto-group-toolbar {
+    width: 100%;
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 12px;
+    grid-column: 1 / -1;  /* 横跨整个网格 */
+}
+
+.auto-group-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: transparent;
+    color: var(--accent);
+    border: 1px solid var(--accent);
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    opacity: 0.8;
+}
+
+.auto-group-link:hover {
+    opacity: 1;
+    background: rgba(47, 129, 247, 0.1);
+    transform: translateY(-1px);
+}
+
+.auto-group-link:active {
+    transform: translateY(0);
+}
+
+.auto-group-link .icon {
+    font-size: 14px;
+}
+
