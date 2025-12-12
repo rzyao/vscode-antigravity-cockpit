@@ -336,6 +336,19 @@ function setupTelemetryHandling(): void {
         statusBarItem.text = `$(error) ${t('status.error')}`;
         statusBarItem.tooltip = err.message;
         statusBarItem.backgroundColor = new vscode.ThemeColor('statusBarItem.errorBackground');
+        
+        // 显示系统弹框
+        vscode.window.showErrorMessage(
+            `${t('notify.bootFailed')}: ${err.message}`,
+            t('help.retry'),
+            t('help.openLogs'),
+        ).then(selection => {
+            if (selection === t('help.retry')) {
+                vscode.commands.executeCommand('agCockpit.retry');
+            } else if (selection === t('help.openLogs')) {
+                logger.show();
+            }
+        });
     });
 }
 
@@ -448,38 +461,129 @@ function updateStatusBar(snapshot: QuotaSnapshot, config: CockpitConfig): void {
         }
     }
 
-    // 更新状态栏
+    // 更新状态栏（每个模型/分组前面显示颜色球，不再使用背景色）
     if (statusTextParts.length > 0) {
-        statusBarItem.text = `$(rocket) ${statusTextParts.join('  |  ')}`;
+        statusBarItem.text = statusTextParts.join(' | ');
     } else {
-        statusBarItem.text = `$(rocket) ${t('statusBar.ready')}`;
+        statusBarItem.text = `🟢 ${t('statusBar.ready')}`;
     }
 
-    // 设置背景颜色（三档区分）
-    if (minPercentage <= QUOTA_THRESHOLDS.CRITICAL) {
-        // 危险：红色背景
-        statusBarItem.backgroundColor = new vscode.ThemeColor('statusBarItem.errorBackground');
-    } else if (minPercentage <= QUOTA_THRESHOLDS.WARNING) {
-        // 警告：黄色背景
-        statusBarItem.backgroundColor = new vscode.ThemeColor('statusBarItem.warningBackground');
-    } else {
-        // 正常：无背景
-        statusBarItem.backgroundColor = undefined;
-    }
+    // 移除背景色，改用每个项目前的颜色球区分
+    statusBarItem.backgroundColor = undefined;
+
+    // 更新悬浮提示 - 卡片式布局显示配额详情
+    statusBarItem.tooltip = generateQuotaTooltip(snapshot, config);
 }
 
 /**
- * 格式化状态栏文本
+ * 生成配额悬浮提示（使用 Markdown 表格保证对齐）
+ */
+function generateQuotaTooltip(snapshot: QuotaSnapshot, config: CockpitConfig): vscode.MarkdownString {
+    const md = new vscode.MarkdownString();
+    md.isTrusted = true;
+    md.supportHtml = true;
+
+    // 标题行
+    const planInfo = snapshot.userInfo?.planName ? ` | ${snapshot.userInfo.planName}` : '';
+    md.appendMarkdown(`**🚀 ${t('dashboard.title')}${planInfo}**\n\n`);
+
+    // 排序逻辑与仪表盘保持一致
+    let sortedModels = [...snapshot.models];
+    if (config.modelOrder && config.modelOrder.length > 0) {
+        // 有自定义顺序时，按用户拖拽设置的顺序排序
+        const orderMap = new Map<string, number>();
+        config.modelOrder.forEach((id, index) => orderMap.set(id, index));
+        sortedModels.sort((a, b) => {
+            const idxA = orderMap.has(a.modelId) ? orderMap.get(a.modelId)! : 99999;
+            const idxB = orderMap.has(b.modelId) ? orderMap.get(b.modelId)! : 99999;
+            return idxA - idxB;
+        });
+    }
+    // 没有自定义顺序时，保持 API 返回的原始顺序
+
+    // 构建 Markdown 表格
+    // 表头留空以保持整洁，或者使用简单的符号
+    md.appendMarkdown('| | | |\n');
+    md.appendMarkdown('| :--- | :--- | :--- |\n');
+
+    for (const model of sortedModels) {
+        const pct = model.remainingPercentage ?? 0;
+        const icon = getStatusIcon(pct);
+        const bar = generateCompactProgressBar(pct);
+        const resetTime = model.timeUntilResetFormatted || '-';
+
+        // 使用完整模型名称
+        // 格式：| 🟡 **Name** | `进度条` | 32.59% → time |
+        const pctDisplay = (Math.floor(pct * 100) / 100).toFixed(2);
+        md.appendMarkdown(`| ${icon} **${model.label}** | \`${bar}\` | ${pctDisplay}% → ${resetTime} |\n`);
+    }
+
+    // 底部提示
+    md.appendMarkdown(`\n---\n*${t('statusBar.tooltip')}*`);
+
+    return md;
+}
+
+/**
+ * 生成紧凑进度条 (7格)
+ */
+function generateCompactProgressBar(percentage: number): string {
+    const total = 7;
+    const filled = Math.round((percentage / 100) * total);
+    const empty = total - filled;
+    return '█'.repeat(filled) + '░'.repeat(empty);
+}
+
+/**
+ * 获取模型短名称
+ */
+function getShortModelName(label: string): string {
+    // 移除常见前缀，保留核心名称
+    if (label.includes('Claude')) {
+        if (label.includes('Opus')) return 'Claude Opus';
+        if (label.includes('Sonnet')) return 'Claude Sonnet';
+        if (label.includes('Thinking')) return 'Claude Think';
+        return 'Claude';
+    }
+    if (label.includes('Gemini')) {
+        if (label.includes('Flash')) return 'Gemini Flash';
+        if (label.includes('Pro') && label.includes('High')) return 'Gemini Pro(H)';
+        if (label.includes('Pro') && label.includes('Low')) return 'Gemini Pro(L)';
+        if (label.includes('Pro')) return 'Gemini Pro';
+        return 'Gemini';
+    }
+    if (label.includes('GPT')) {
+        return 'GPT-OSS';
+    }
+    // 默认：取前 13 个字符
+    return label.length > 13 ? label.substring(0, 13) + '..' : label;
+}
+
+/**
+ * 获取状态图标（三色统一规则）
+ * 🟢 > 50% (健康)
+ * 🟡 30% - 50% (警告)
+ * 🔴 <= 30% (危险)
+ */
+function getStatusIcon(percentage: number): string {
+    if (percentage <= QUOTA_THRESHOLDS.WARNING) return '🔴';  // <= 30%
+    if (percentage <= QUOTA_THRESHOLDS.HEALTHY) return '🟡';  // <= 50%
+    return '🟢'; // > 50%
+}
+
+/**
+ * 格式化状态栏文本（带颜色球前缀）
  */
 function formatStatusBarText(label: string, percentage: number, format: string): string {
+    const icon = getStatusIcon(percentage);
     switch (format) {
         case STATUS_BAR_FORMAT.COMPACT:
-            return `${Math.floor(percentage)}%`;
+            return `${icon} ${Math.floor(percentage)}%`;
         case STATUS_BAR_FORMAT.DETAILED:
-            return `${label}: ${percentage.toFixed(1)}%`;
+            return `${icon} ${label}: ${percentage.toFixed(1)}%`;
         case STATUS_BAR_FORMAT.STANDARD:
         default:
-            return `${label}: ${Math.floor(percentage)}%`;
+            return `${icon} ${label}: ${Math.floor(percentage)}%`;
     }
 }
 
@@ -503,6 +607,11 @@ function handleConfigChange(config: CockpitConfig): void {
     reactor.reprocess();
 }
 
+/** 自动重试计数器 */
+let autoRetryCount = 0;
+const MAX_AUTO_RETRY = 3;
+const AUTO_RETRY_DELAY_MS = 5000;
+
 /**
  * 启动系统
  */
@@ -521,16 +630,55 @@ async function bootSystems(): Promise<void> {
             reactor.engage(info.connectPort, info.csrfToken);
             reactor.startReactor(configService.getRefreshIntervalMs());
             systemOnline = true;
+            autoRetryCount = 0; // 重置计数器
             statusBarItem.text = `$(rocket) ${t('statusBar.ready')}`;
             logger.info('System boot successful');
         } else {
-            handleOfflineState();
+            // 自动重试机制
+            if (autoRetryCount < MAX_AUTO_RETRY) {
+                autoRetryCount++;
+                logger.info(`Auto-retry ${autoRetryCount}/${MAX_AUTO_RETRY} in ${AUTO_RETRY_DELAY_MS / 1000}s...`);
+                statusBarItem.text = `$(sync~spin) ${t('statusBar.connecting')} (${autoRetryCount}/${MAX_AUTO_RETRY})`;
+                
+                setTimeout(() => {
+                    bootSystems();
+                }, AUTO_RETRY_DELAY_MS);
+            } else {
+                autoRetryCount = 0; // 重置计数器
+                handleOfflineState();
+            }
         }
     } catch (e) {
         const error = e instanceof Error ? e : new Error(String(e));
         logger.error('Boot Error', error);
-        statusBarItem.text = `$(error) ${t('statusBar.error')}`;
-        statusBarItem.backgroundColor = new vscode.ThemeColor('statusBarItem.errorBackground');
+        
+        // 自动重试机制（异常情况也自动重试）
+        if (autoRetryCount < MAX_AUTO_RETRY) {
+            autoRetryCount++;
+            logger.info(`Auto-retry ${autoRetryCount}/${MAX_AUTO_RETRY} after error in ${AUTO_RETRY_DELAY_MS / 1000}s...`);
+            statusBarItem.text = `$(sync~spin) ${t('statusBar.connecting')} (${autoRetryCount}/${MAX_AUTO_RETRY})`;
+            
+            setTimeout(() => {
+                bootSystems();
+            }, AUTO_RETRY_DELAY_MS);
+        } else {
+            autoRetryCount = 0; // 重置计数器
+            statusBarItem.text = `$(error) ${t('statusBar.error')}`;
+            statusBarItem.backgroundColor = new vscode.ThemeColor('statusBarItem.errorBackground');
+            
+            // 显示系统弹框
+            vscode.window.showErrorMessage(
+                `${t('notify.bootFailed')}: ${error.message}`,
+                t('help.retry'),
+                t('help.openLogs'),
+            ).then(selection => {
+                if (selection === t('help.retry')) {
+                    vscode.commands.executeCommand('agCockpit.retry');
+                } else if (selection === t('help.openLogs')) {
+                    logger.show();
+                }
+            });
+        }
     }
 }
 

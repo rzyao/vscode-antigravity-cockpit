@@ -209,9 +209,17 @@
     // ============ 工具函数 ============
 
     function getHealthColor(percentage) {
-        if (percentage > 50) return 'var(--success)';
-        if (percentage > 20) return 'var(--warning)';
-        return 'var(--danger)';
+        // 三色统一规则 (HEALTHY=50, WARNING=30)
+        if (percentage > 50) return 'var(--success)';  // 绿色 > 50%
+        if (percentage > 30) return 'var(--warning)';  // 黄色 30-50%
+        return 'var(--danger)';                        // 红色 <= 30%
+    }
+
+    function getStatusText(percentage) {
+        // 三色统一规则 (HEALTHY=50, WARNING=30)
+        if (percentage > 50) return i18n['dashboard.active'] || 'Healthy';   // 健康
+        if (percentage > 30) return i18n['dashboard.warning'] || 'Warning';  // 警告
+        return i18n['dashboard.danger'] || 'Danger';                         // 危险
     }
 
     function togglePin(modelId) {
@@ -378,14 +386,7 @@
             <div class="icon">🚀</div>
             <h2>${i18n['dashboard.offline'] || 'Systems Offline'}</h2>
             <p>${errorMessage || i18n['dashboard.offlineDesc'] || 'Could not detect Antigravity process. Please ensure Antigravity is running.'}</p>
-            <div class="offline-actions">
-                <button class="btn-primary" onclick="retryConnection()">
-                    ${i18n['help.retry'] || 'Retry Connection'}
-                </button>
-                <button class="btn-secondary" onclick="openLogs()">
-                    ${i18n['help.openLogs'] || 'Open Logs'}
-                </button>
-            </div>
+            <p class="offline-hint">${i18n['dashboard.offlineHint'] || 'Use the status bar button to retry connection.'}</p>
         `;
         dashboard.appendChild(card);
     }
@@ -603,9 +604,7 @@
             <div class="info-row">
                 <span>${i18n['dashboard.status'] || 'Status'}</span>
                 <span class="info-value" style="color: ${color}">
-                    ${group.isExhausted 
-                        ? (i18n['dashboard.exhausted'] || 'Exhausted') 
-                        : (i18n['dashboard.active'] || 'Active')}
+                    ${getStatusText(pct)}
                 </span>
             </div>
             <div class="group-models">
@@ -687,9 +686,7 @@
             <div class="info-row">
                 <span>${i18n['dashboard.status'] || 'Status'}</span>
                 <span class="info-value" style="color: ${color}">
-                    ${model.isExhausted 
-                        ? (i18n['dashboard.exhausted'] || 'Exhausted') 
-                        : (i18n['dashboard.active'] || 'Active')}
+                    ${getStatusText(pct)}
                 </span>
             </div>
         `;
